@@ -40,8 +40,8 @@ grid = ['0000000000000000000000000000',
 ROWS = len(grid)
 COLS = len(grid[0])
 
-SCRW = 560
-SCRH = 600
+SCRW = 800
+SCRH = 800
 
 # Cell properties
 class cell():
@@ -60,24 +60,29 @@ class pacman():
         self.turn = direc
 
     def set_turn(self):
-        if self.turn == 0 and game[self.row][self.col+1].ispath:
+        if self.turn == 0 and game[self.row][(self.col+1)%COLS].ispath and self.col!=(COLS-1):
             self.direc = 0
         elif self.turn == 1 and game[self.row-1][self.col].ispath:
             self.direc = 1
-        elif self.turn == 2 and game[self.row][self.col-1].ispath:
+        elif self.turn == 2 and game[self.row][(self.col-1)%COLS].ispath and self.col!=0:
             self.direc = 2
         elif self.turn == 3 and game[self.row+1][self.col].ispath:
             self.direc = 3
     
     def move(self):
-        if self.direc == 0 and game[self.row][self.col+1].ispath:
-            self.col += 1
+        global opencost
+        if self.direc == 0 and game[self.row][(self.col+1)%COLS].ispath:
+            self.col = (self.col+1)%COLS
+            opencost = img0
         elif self.direc == 1 and game[self.row-1][self.col].ispath:
             self.row -= 1
-        elif self.direc == 2 and game[self.row][self.col-1].ispath:
-            self.col -= 1
+            opencost = img1
+        elif self.direc == 2 and game[self.row][(self.col-1)%COLS].ispath:
+            self.col = (self.col-1)%COLS
+            opencost = img2
         elif self.direc == 3 and game[self.row+1][self.col].ispath:
             self.row += 1
+            opencost = img3
 
 
 class enemy():
@@ -88,11 +93,11 @@ class enemy():
     
     def move(self):
         poss_dir = []
-        if game[self.row][self.col+1].ispath:
+        if game[self.row][(self.col+1)%COLS].ispath:
             poss_dir.append(0)
         if game[self.row-1][self.col].ispath:
             poss_dir.append(1)
-        if game[self.row][self.col-1].ispath:
+        if game[self.row][(self.col-1)%COLS].ispath:
             poss_dir.append(2)
         if game[self.row+1][self.col].ispath:
             poss_dir.append(3)
@@ -100,11 +105,11 @@ class enemy():
         self.direc = random.choice(poss_dir)
 
         if self.direc == 0:
-            self.col += 1
+            self.col = (self.col+1)%COLS
         elif self.direc == 1:
             self.row -= 1
         elif self.direc == 2:
-            self.col -= 1
+            self.col = (self.col-1)%COLS
         elif self.direc == 3:
             self.row += 1
 
@@ -127,17 +132,25 @@ for r in game:
 
 # Screen setup
 screen = pygame.display.set_mode([SCRW,SCRH])
-screen.fill((0,0,0))
+screen.fill((255,91,255))
 surf_path = pygame.Surface([SCRW/COLS,SCRH/ROWS])
-path_color = (205,255,255)
+path_color = (0,0,0)
 surf_path.fill(path_color)
 
 surf_player = pygame.Surface([SCRW/COLS,SCRH/ROWS])
-img = pygame.image.load('/images/p_0.png')
-img2 = pygame.image.load('./images/p_norm.png')
+img = pygame.image.load('./images/norm.png')
+img0 = pygame.image.load('./images/0.png')
+img1 = pygame.image.load('./images/1.png')
+img2 = pygame.image.load('./images/2.png')
+img3 = pygame.image.load('./images/3.png')
+
 img = pygame.transform.scale(img,(SCRW/COLS,SCRH/ROWS))
+img0 = pygame.transform.scale(img0,(SCRW/COLS,SCRH/ROWS))
+img1 = pygame.transform.scale(img1,(SCRW/COLS,SCRH/ROWS))
 img2 = pygame.transform.scale(img2,(SCRW/COLS,SCRH/ROWS))
-surf_player.blit(img,(0,0))
+img3 = pygame.transform.scale(img3,(SCRW/COLS,SCRH/ROWS))
+
+opencost = img
 
 surf_enemy = pygame.Surface([SCRW/COLS,SCRH/ROWS])
 surf_enemy.fill((250,20,150))
@@ -147,6 +160,7 @@ p = pacman(1,6,3)
 pink = enemy(1,4,0)
 red = enemy(1,5,0)
 green = enemy(1,3,2)
+costume_count = 0
 running = True
 while running:
     for event in pygame.event.get():
@@ -169,12 +183,22 @@ while running:
     for eachpath in path_cells:
         screen.blit(surf_path,(eachpath.xpos,eachpath.ypos))
     
+    if costume_count%2:
+        surf_player.blit(img,(0,0))
+    else:
+        surf_player.blit(opencost,(0,0))
+
+    costume_count+=1
+    
     screen.blit(surf_player,(game[p.row][p.col].xpos,game[p.row][p.col].ypos))
     screen.blit(surf_enemy,(game[pink.row][pink.col].xpos,game[pink.row][pink.col].ypos))
     screen.blit(surf_enemy,(game[green.row][green.col].xpos,game[green.row][green.col].ypos))
     screen.blit(surf_enemy,(game[red.row][red.col].xpos,game[red.row][red.col].ypos))
 
-    
+
+    print(p.row,p.col)
+
+
     pygame.display.flip()
     p.move()
     pink.move()

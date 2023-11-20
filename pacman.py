@@ -40,8 +40,10 @@ grid = ['0000000000000000000000000000',
 ROWS = len(grid)
 COLS = len(grid[0])
 
-SCRW = 560
-SCRH = 600
+SCRW = 800
+SCRH = 800
+CELLW = SCRW//COLS
+CELLH = SCRH//ROWS
 
 # Cell properties
 class cell():
@@ -49,8 +51,9 @@ class cell():
         self.row = row
         self.col = col
         self.ispath = int(ispath)                      #Boolean
-        self.xpos = (SCRW//COLS)*col             #Cell x-axis position
-        self.ypos = (SCRH//ROWS)*row             #cell y-axis position
+        self.xpos = (CELLW)*col             #Cell x-axis position
+        self.ypos = (CELLH)*row             #cell y-axis position
+        self.dotted = True
 
 class pacman():
     def __init__(self,row,col,direc):
@@ -60,24 +63,33 @@ class pacman():
         self.turn = direc
 
     def set_turn(self):
-        if self.turn == 0 and game[self.row][self.col+1].ispath:
+        if self.turn == 0 and game[self.row][(self.col+1)%COLS].ispath and self.col!=(COLS-1):
             self.direc = 0
         elif self.turn == 1 and game[self.row-1][self.col].ispath:
             self.direc = 1
-        elif self.turn == 2 and game[self.row][self.col-1].ispath:
+        elif self.turn == 2 and game[self.row][(self.col-1)%COLS].ispath and self.col!=0:
             self.direc = 2
         elif self.turn == 3 and game[self.row+1][self.col].ispath:
             self.direc = 3
     
     def move(self):
-        if self.direc == 0 and game[self.row][self.col+1].ispath:
-            self.col += 1
+        global opencost
+        global dotseaten
+        if self.direc == 0 and game[self.row][(self.col+1)%COLS].ispath:
+            self.col = (self.col+1)%COLS
+            opencost = img0
         elif self.direc == 1 and game[self.row-1][self.col].ispath:
             self.row -= 1
-        elif self.direc == 2 and game[self.row][self.col-1].ispath:
-            self.col -= 1
+            opencost = img1
+        elif self.direc == 2 and game[self.row][(self.col-1)%COLS].ispath:
+            self.col = (self.col-1)%COLS
+            opencost = img2
         elif self.direc == 3 and game[self.row+1][self.col].ispath:
             self.row += 1
+            opencost = img3
+        if game[self.row][self.col].dotted == True:
+            game[self.row][self.col].dotted = False
+            dotseaten +=1
 
 
 class enemy():
@@ -88,11 +100,11 @@ class enemy():
     
     def move(self):
         poss_dir = []
-        if game[self.row][self.col+1].ispath:
+        if game[self.row][(self.col+1)%COLS].ispath:
             poss_dir.append(0)
         if game[self.row-1][self.col].ispath:
             poss_dir.append(1)
-        if game[self.row][self.col-1].ispath:
+        if game[self.row][(self.col-1)%COLS].ispath:
             poss_dir.append(2)
         if game[self.row+1][self.col].ispath:
             poss_dir.append(3)
@@ -100,11 +112,11 @@ class enemy():
         self.direc = random.choice(poss_dir)
 
         if self.direc == 0:
-            self.col += 1
+            self.col = (self.col+1)%COLS
         elif self.direc == 1:
             self.row -= 1
         elif self.direc == 2:
-            self.col -= 1
+            self.col = (self.col-1)%COLS
         elif self.direc == 3:
             self.row += 1
 
@@ -124,22 +136,36 @@ for r in game:
         if c.ispath:
             path_cells.append(c)
 
+TOTALDOTS = len(path_cells)
+
 
 # Screen setup
 screen = pygame.display.set_mode([SCRW,SCRH])
-screen.fill((0,0,0))
-surf_path = pygame.Surface([SCRW/COLS,SCRH/ROWS])
-path_color = (205,255,255)
+screen.fill((255,91,255))
+surf_path = pygame.Surface([CELLW,CELLH])
+path_color = (0,0,0)
 surf_path.fill(path_color)
 
-surf_player = pygame.Surface([SCRW/COLS,SCRH/ROWS])
-img = pygame.image.load('/images/p_0.png')
-img2 = pygame.image.load('./images/p_norm.png')
-img = pygame.transform.scale(img,(SCRW/COLS,SCRH/ROWS))
-img2 = pygame.transform.scale(img2,(SCRW/COLS,SCRH/ROWS))
-surf_player.blit(img,(0,0))
+img = pygame.image.load('./images/norm.png')
+img0 = pygame.image.load('./images/0.png')
+img1 = pygame.image.load('./images/1.png')
+img2 = pygame.image.load('./images/2.png')
+img3 = pygame.image.load('./images/3.png')
+withdot = pygame.image.load('./images/dot.png')
+nodot = pygame.image.load('./images/nodot.png')
 
-surf_enemy = pygame.Surface([SCRW/COLS,SCRH/ROWS])
+img = pygame.transform.scale(img,(CELLW,CELLH))
+img0 = pygame.transform.scale(img0,(CELLW,CELLH))
+img1 = pygame.transform.scale(img1,(CELLW,CELLH))
+img2 = pygame.transform.scale(img2,(CELLW,CELLH))
+img3 = pygame.transform.scale(img3,(CELLW,CELLH))
+withdot = pygame.transform.scale(withdot,(CELLW,CELLH))
+nodot = pygame.transform.scale(nodot,(CELLW,CELLH))
+
+opencost = img
+
+surf_player = pygame.Surface([CELLW,CELLH])
+surf_enemy = pygame.Surface([CELLW,CELLH])
 surf_enemy.fill((250,20,150))
 
 
@@ -147,6 +173,8 @@ p = pacman(1,6,3)
 pink = enemy(1,4,0)
 red = enemy(1,5,0)
 green = enemy(1,3,2)
+counter = 0
+dotseaten = 0
 running = True
 while running:
     for event in pygame.event.get():
@@ -167,16 +195,34 @@ while running:
     p.set_turn()    
     time.sleep(0.15)
     for eachpath in path_cells:
+        if eachpath.dotted:
+            surf_path.blit(withdot,(0,0))
+        else:
+            surf_path.blit(nodot,(0,0))
         screen.blit(surf_path,(eachpath.xpos,eachpath.ypos))
     
+    if counter%2:
+        surf_player.blit(img,(0,0))
+    else:
+        surf_player.blit(opencost,(0,0))
+    
+    if game[p.row][p.col].dotted:
+        pass
+    
+    if dotseaten == TOTALDOTS:
+        print("GAME OVER")
+
     screen.blit(surf_player,(game[p.row][p.col].xpos,game[p.row][p.col].ypos))
     screen.blit(surf_enemy,(game[pink.row][pink.col].xpos,game[pink.row][pink.col].ypos))
     screen.blit(surf_enemy,(game[green.row][green.col].xpos,game[green.row][green.col].ypos))
     screen.blit(surf_enemy,(game[red.row][red.col].xpos,game[red.row][red.col].ypos))
 
-    
     pygame.display.flip()
     p.move()
     pink.move()
     red.move()
     green.move()
+
+    counter +=1
+    print(dotseaten)
+    print(TOTALDOTS)    

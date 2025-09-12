@@ -1,3 +1,5 @@
+# HELLO IM LEARNING GITHUB
+
 import pygame
 import time
 import random
